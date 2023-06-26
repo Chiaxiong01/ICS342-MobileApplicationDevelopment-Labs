@@ -1,8 +1,15 @@
 package com.ics342.labs
 
+import android.app.AlertDialog
+import android.content.DialogInterface
+import android.content.DialogInterface.OnClickListener
+import android.graphics.Color
 import android.os.Bundle
+import android.widget.Button
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,17 +17,24 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ics342.labs.data.DataItem
 import com.ics342.labs.ui.theme.LabsTheme
+
 
 private val dataItems = listOf(
     DataItem(1, "Item 1", "Description 1"),
@@ -46,8 +60,11 @@ private val dataItems = listOf(
 )
 
 class MainActivity : ComponentActivity() {
+    private lateinit var builder: AlertDialog.Builder
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             LabsTheme {
                 // A surface container using the 'background' color from the theme
@@ -57,7 +74,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
 }
 
 @Composable
@@ -70,9 +86,10 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun DataItemView(dataItem: DataItem) {
+    val openDialog = remember { mutableStateOf(false) }
     /* Create the view for the data item her. */
     Spacer(modifier = Modifier.size(30.dp))
-    Row {
+    Row (modifier = Modifier.clickable (onClick = {openDialog.value = true })){
         Column {
             Text(text = dataItem.id.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
@@ -82,23 +99,45 @@ fun DataItemView(dataItem: DataItem) {
             Text(text = dataItem.description)
         }
     }
+    if (openDialog.value) {
+        AlertDialog(
+            onDismissRequest = { openDialog.value = false },
+            title = {
+                Text(
+                    text = dataItem.name.toString()
+                )
+            },
+            text = {
+                Text(text = dataItem.description.toString())
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        openDialog.value = false
+                    }
+                ) {
+                    Text(text = "Ok")
+                }
+            }
+        )
+    }
 }
 
-@Composable
-fun DataItemList(dataItems: List<DataItem>) {
-    /* Create the list here. This function will call DataItemView() */
-    LazyColumn{
-        items(items = dataItems) {
-            DataItemView(dataItem = it)
+    @Composable
+    fun DataItemList(dataItems: List<DataItem>) {
+        /* Create the list here. This function will call DataItemView() */
+        LazyColumn {
+            items(items = dataItems) {
+                DataItemView(dataItem = it)
+            }
         }
     }
 
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LabsTheme {
-        Greeting("Android")
+    @Preview(showBackground = true)
+    @Composable
+    fun GreetingPreview() {
+        LabsTheme {
+            Greeting("Android")
+        }
     }
 }
