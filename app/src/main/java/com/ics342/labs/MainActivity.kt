@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,6 +33,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.ics342.labs.data.DataItem
 import com.ics342.labs.ui.theme.LabsTheme
 
@@ -61,83 +66,70 @@ private val dataItems = listOf(
 
 class MainActivity : ComponentActivity() {
     private lateinit var builder: AlertDialog.Builder
+    private lateinit var DataItemID: String
+    private lateinit var DataItemDescription: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            LabsTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    Greeting("Android")
-                    DataItemList(dataItems = dataItems)
+            val navController = rememberNavController()
+            NavHost(navController = navController, startDestination = "DataItemList") {
+                this.composable("DataItemList") {
+                    DataItemList(dataItems = dataItems, navController)
+                }
+                composable("DetailsScreen") {
+                    DataDetailsScreen()
                 }
             }
         }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Composable
-fun DataItemView(dataItem: DataItem) {
-    val openDialog = remember { mutableStateOf(false) }
-    /* Create the view for the data item her. */
-    Spacer(modifier = Modifier.size(30.dp))
-    Row (modifier = Modifier.clickable (onClick = {openDialog.value = true })){
-        Column {
-            Text(text = dataItem.id.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        }
-        Spacer(modifier = Modifier.size(8.dp))
-        Column {
-            Text(text = dataItem.name, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text(text = dataItem.description)
-        }
     }
-    if (openDialog.value) {
-        AlertDialog(
-            onDismissRequest = { openDialog.value = false },
-            title = {
-                Text(
-                    text = dataItem.name.toString()
-                )
-            },
-            text = {
-                Text(text = dataItem.description.toString())
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        openDialog.value = false
-                    }
-                ) {
-                    Text(text = "Ok")
-                }
-            }
-        )
-    }
-}
 
     @Composable
-    fun DataItemList(dataItems: List<DataItem>) {
+    fun DataItemView(dataItem: DataItem, navController: NavController) {
+        Spacer(modifier = Modifier.size(30.dp))
+        Row(modifier = Modifier.clickable(onClick = {
+            navController.navigate("DetailsScreen"); DataItemID = dataItem.id.toString(); DataItemDescription = dataItem.description
+        })) {
+            Column {
+                Text(
+                    text = dataItem.id.toString(),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.size(8.dp))
+            Column {
+                Text(text = dataItem.name, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(text = dataItem.description)
+            }
+        }
+    }
+
+    @Composable
+    fun DataItemList(dataItems: List<DataItem>, navController: NavController) {
         /* Create the list here. This function will call DataItemView() */
         LazyColumn {
             items(items = dataItems) {
-                DataItemView(dataItem = it)
+                DataItemView(dataItem = it, navController = navController)
             }
         }
     }
 
-    @Preview(showBackground = true)
     @Composable
-    fun GreetingPreview() {
-        LabsTheme {
-            Greeting("Android")
+    fun DataDetailsScreen() {
+        Row {
+            Column ( modifier = Modifier.padding(16.dp)){
+                Text(
+                    text = "ID $DataItemID Details",
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = DataItemDescription,
+                    fontSize = 15.sp,
+                )
+            }
         }
     }
 }
