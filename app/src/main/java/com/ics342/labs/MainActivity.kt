@@ -1,76 +1,114 @@
 package com.ics342.labs
 
 import android.os.Bundle
-import android.view.Surface
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ics342.labs.ui.theme.LabsTheme
-import java.time.chrono.JapaneseEra.values
-
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import dagger.hilt.android.AndroidEntryPoint
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            LabsTheme {
-                // A surface container using the 'background' color from the theme
-                Surface {
-                    WeatherApp()
-                }
+            // A surface container using the 'background' color from the theme
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                val viewModel: WeatherViewModel = hiltViewModel()
+                WeatherView(viewModel)
             }
         }
     }
 
     @Composable
-    fun WeatherApp() {
+    fun WeatherView(
+        viewModel: WeatherViewModel
+    ) {
+        val weatherData = viewModel.weatherData.observeAsState()
+        var showDialog = false
+
+        LaunchedEffect(Unit) {
+            viewModel.viewAppeared()
+        }
+
+        Column {
+            Text("City")
+            Row {
+                Text(text = "temp")
+                    weatherData.value?.let {
+                    WeatherConditionIcon(url = it.iconUrl)
+                }
+            }
+        }
+
+        fun onSearch() {
+            if (viewModel.isValidZipCode()) {
+                viewModel.viewAppeared()
+            } else {
+                showDialog = true
+            }
+        }
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Invalid ZIP code") },
+                text = { Text("Please enter a valid 5-digit ZIP code.") },
+                confirmButton = {
+                    Button(onClick = { showDialog = false }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+
+        Button(onClick = { onSearch() }) {
+            Text("Search")
+        }
+    }
+
+    @Composable
+    fun WeatherConditionIcon(
+        url: String
+    ) {
+        AsyncImage(model = url, contentDescription = "")
+    }
+
+    @Composable
+    fun WeatherApp(navController: NavController) {
         //Aligns everything under each other
         Column {
             //Create weather app title
-            Column(
-                modifier = Modifier
-                    .background(Color.Blue)
-                    .fillMaxWidth()
-            ) {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    fontSize = 20.sp,
-                    color = Color.White,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
+            titleBar("My Weather App")
 
             //Create top section of screen (city,State)
             Text(
@@ -117,33 +155,64 @@ class MainActivity : ComponentActivity() {
                     .padding(35.dp)
                     .fillMaxWidth()
             ) {
-
                 //Create lowDegree
-                Text(
-                    text = stringResource(R.string.lowDegree),
-                    fontSize = 18.sp
-                )
-
+                textTemplate(stringResource(R.string.lowDegree))
                 //Create highDegree
-                Text(
-                    text = stringResource(R.string.highDegree),
-                    fontSize = 18.sp
-                )
-
+                textTemplate(stringResource(R.string.highDegree))
                 //Create humidity
-                Text(
-                    text = stringResource(R.string.humidity),
-                    fontSize = 18.sp
-                )
-
+                textTemplate(stringResource(R.string.humidity))
                 //Create pressure
+                textTemplate(stringResource(R.string.pressure))
+            }
+
+            //Create Forecast Button
+            Column(
+                modifier = Modifier
+                    .background(Color.Gray)
+                    .padding(16.dp)
+                    .width(200.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .clickable(onClick = {
+                        navController.navigate("ForecastListDisplay");
+                    })
+            ) {
                 Text(
-                    text = stringResource(R.string.pressure),
-                    fontSize = 18.sp
+                    text = "Forecast",
+                    fontSize = 20.sp,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
             //End
         }
+    }
+
+    @Composable
+    fun titleBar(title: String) {
+        //Template to create title bar
+        Column(
+            modifier = Modifier
+                .background(Color.Blue)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = "$title",
+                fontSize = 20.sp,
+                color = Color.White,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
+
+    @Composable
+    fun textTemplate(text: String) {
+        //Template to add text (size:18)
+        //Template to add text (size:18)
+        Text(
+            text = text,
+            fontSize = 18.sp
+        )
     }
 }
