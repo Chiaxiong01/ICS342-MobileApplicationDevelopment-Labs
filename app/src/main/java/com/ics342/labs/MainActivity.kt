@@ -1,24 +1,28 @@
 package com.ics342.labs
 
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,34 +31,76 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.squareup.moshi.Moshi
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-
+import coil.compose.AsyncImage
+import dagger.hilt.android.AndroidEntryPoint
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val navController = rememberNavController()
-            NavHost(navController = navController, startDestination = "HomeScreen") {
-                this.composable("HomeScreen") {
-                    WeatherApp(navController)
-                }
-                composable("ForecastListDisplay") {
-                    ForecastScreen().DataItemList(dataItems)
+            // A surface container using the 'background' color from the theme
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                val viewModel: WeatherViewModel = hiltViewModel()
+                WeatherView(viewModel)
+            }
+        }
+    }
+
+    @Composable
+    fun WeatherView(
+        viewModel: WeatherViewModel
+    ) {
+        val weatherData = viewModel.weatherData.observeAsState()
+        var showDialog = false
+
+        LaunchedEffect(Unit) {
+            viewModel.viewAppeared()
+        }
+
+        Column {
+            Text("City")
+            Row {
+                Text(text = "temp")
+                    weatherData.value?.let {
+                    WeatherConditionIcon(url = it.iconUrl)
                 }
             }
         }
+
+        fun onSearch() {
+            if (viewModel.isValidZipCode()) {
+                viewModel.viewAppeared()
+            } else {
+                showDialog = true
+            }
+        }
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Invalid ZIP code") },
+                text = { Text("Please enter a valid 5-digit ZIP code.") },
+                confirmButton = {
+                    Button(onClick = { showDialog = false }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+
+        Button(onClick = { onSearch() }) {
+            Text("Search")
+        }
+    }
+
+    @Composable
+    fun WeatherConditionIcon(
+        url: String
+    ) {
+        AsyncImage(model = url, contentDescription = "")
     }
 
     @Composable
