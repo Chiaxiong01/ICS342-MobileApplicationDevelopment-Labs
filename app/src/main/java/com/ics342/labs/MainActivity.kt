@@ -1,76 +1,68 @@
 package com.ics342.labs
 
+import android.os.Build
 import android.os.Bundle
-import android.view.Surface
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.material3.Surface
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ics342.labs.ui.theme.LabsTheme
-import java.time.chrono.JapaneseEra.values
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.squareup.moshi.Moshi
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
 
 class MainActivity : ComponentActivity() {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            LabsTheme {
-                // A surface container using the 'background' color from the theme
-                Surface {
-                    WeatherApp()
+            val navController = rememberNavController()
+            NavHost(navController = navController, startDestination = "HomeScreen") {
+                this.composable("HomeScreen") {
+                    WeatherApp(navController)
+                }
+                composable("ForecastListDisplay") {
+                    ForecastScreen().DataItemList(dataItems)
                 }
             }
         }
     }
 
     @Composable
-    fun WeatherApp() {
+    fun WeatherApp(navController: NavController) {
         //Aligns everything under each other
         Column {
             //Create weather app title
-            Column(
-                modifier = Modifier
-                    .background(Color.Blue)
-                    .fillMaxWidth()
-            ) {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    fontSize = 20.sp,
-                    color = Color.White,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
+            titleBar("My Weather App")
 
             //Create top section of screen (city,State)
             Text(
@@ -117,33 +109,64 @@ class MainActivity : ComponentActivity() {
                     .padding(35.dp)
                     .fillMaxWidth()
             ) {
-
                 //Create lowDegree
-                Text(
-                    text = stringResource(R.string.lowDegree),
-                    fontSize = 18.sp
-                )
-
+                textTemplate(stringResource(R.string.lowDegree))
                 //Create highDegree
-                Text(
-                    text = stringResource(R.string.highDegree),
-                    fontSize = 18.sp
-                )
-
+                textTemplate(stringResource(R.string.highDegree))
                 //Create humidity
-                Text(
-                    text = stringResource(R.string.humidity),
-                    fontSize = 18.sp
-                )
-
+                textTemplate(stringResource(R.string.humidity))
                 //Create pressure
+                textTemplate(stringResource(R.string.pressure))
+            }
+
+            //Create Forecast Button
+            Column(
+                modifier = Modifier
+                    .background(Color.Gray)
+                    .padding(16.dp)
+                    .width(200.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .clickable(onClick = {
+                        navController.navigate("ForecastListDisplay");
+                    })
+            ) {
                 Text(
-                    text = stringResource(R.string.pressure),
-                    fontSize = 18.sp
+                    text = "Forecast",
+                    fontSize = 20.sp,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
             //End
         }
+    }
+
+    @Composable
+    fun titleBar(title: String) {
+        //Template to create title bar
+        Column(
+            modifier = Modifier
+                .background(Color.Blue)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = "$title",
+                fontSize = 20.sp,
+                color = Color.White,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
+
+    @Composable
+    fun textTemplate(text: String) {
+        //Template to add text (size:18)
+        //Template to add text (size:18)
+        Text(
+            text = text,
+            fontSize = 18.sp
+        )
     }
 }
